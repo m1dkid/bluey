@@ -1,12 +1,12 @@
 mod adapters;
 mod services;
 
-use std::str::FromStr;
+use std::{fmt::Write, str::FromStr};
 
 use crate::adapters::list_adapters;
 use crate::services::service;
 
-use bluer::{gatt::local::Characteristic, Address};
+use bluer::{gatt::local::Characteristic, Address, Uuid};
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -23,8 +23,10 @@ enum Commands {
     List(ListArgs),
     /// Scan a device
     Enumerate(EnumArgs),
-    /// Write to a characteristic
+    /// Read a characteristic
     Read(ReadArgs),
+    /// Write to a characteristic
+    Write(WriteArgs),
 }
 
 #[derive(Args)]
@@ -55,6 +57,22 @@ struct ReadArgs {
     /// Characteristic to read
     #[arg(short, long)]
     characteristic: String,
+}
+
+#[derive(Args)]
+struct WriteArgs {
+    /// Device address
+    #[arg(short = 'b', long)]
+    address: String,
+    /// Adapter to use
+    #[arg(short, long)]
+    adapter: String,
+    /// Characteristic to write
+    #[arg(short, long)]
+    characteristic: String,
+    // Data to write
+    #[arg(short, long)]
+    data: String,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -96,6 +114,17 @@ async fn main() -> bluer::Result<()> {
                 .expect("Could not find adapter");
             let addr = Address::from_str(args.address.as_str()).expect("Could not parse address");
             let device = adapter.device(addr).expect("Could not parse device");
+            let char_uuid = Uuid::parse_str(&*args.characteristic).unwrap();
+            service::read_characteristic(&device, char_uuid).await?;
+        }
+        Commands::Write(args) => {
+            let adapter = session
+                .adapter(&args.adapter)
+                .expect("Could not find adapter");
+            let addr = Address::from_str(args.address.as_str()).expect("Could not parse address");
+            let device = adapter.device(addr).expect("Could not parse device");
+            let char_uuid = Uuid::parse_str(&*args.characteristic).unwrap();
+            service::write_characteristic(&device, char_uuid, args.data).await?;
         }
     }
     Ok(())

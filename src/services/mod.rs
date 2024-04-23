@@ -43,11 +43,7 @@ pub mod service {
         Ok(())
     }
 
-    pub async fn write_characteristic(
-        device: &Device,
-        char_uuid: Uuid,
-        data: String,
-    ) -> Result<()> {
+    pub async fn write_characteristic(device: &Device, char_uuid: Uuid, data: &[u8]) -> Result<()> {
         //Try to connect
         connect(device).await?;
 
@@ -56,6 +52,7 @@ pub mod service {
             for char in service.characteristics().await? {
                 let uuid = char.uuid().await?;
                 if uuid == char_uuid {
+                    char.write(data).await?;
                     println!("    Characteristic UUID: {}", &uuid);
                     println!(
                         "    Characteristic data: {:?}",

@@ -124,7 +124,7 @@ async fn main() -> bluer::Result<()> {
             let addr = Address::from_str(args.address.as_str()).expect("Could not parse address");
             let device = adapter.device(addr).expect("Could not parse device");
             let char_uuid = Uuid::parse_str(&*args.characteristic).unwrap();
-            service::write_characteristic(&device, char_uuid, args.data).await?;
+            service::write_characteristic(&device, char_uuid, args.data.as_bytes()).await?;
         }
     }
     Ok(())
